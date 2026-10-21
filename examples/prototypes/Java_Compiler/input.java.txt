@@ -1,0 +1,7 @@
+// Lexify Mini Java-like language (NOT full Java)
+int a = 10;
+int b = 5;
+int total = a + b * 2;
+print(total);
+print((total - 4) / 2);
+

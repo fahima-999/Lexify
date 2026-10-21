@@ -1,0 +1,12 @@
+// Lexify supports int/double declarations, assignment, arithmetic, and System.out.println.
+public class Sample {
+    public static void main(String[] args) {
+        int a = 10;
+        int b = 5;
+        int result = a + b * 2;
+        System.out.println(result);
+        result = (result - 3) / 2;
+        System.out.println(result);
+        return;
+    }
+}
