@@ -1,7 +1,10 @@
-/* Lexify driver: lexer -> parser -> (AST -> semantic -> TAC, to be added) */
+/* Lexify driver: lexer -> parser -> AST -> semantic -> TAC */
 #include <stdio.h>
 #include <string.h>
 #include "ast/ast.h"
+#include "semantic/semantic.h"
+#include "symbol_table/symbol_table.h"
+#include "tac/tac.h"
 
 extern FILE *yyin;
 extern int yyparse(void);
@@ -10,13 +13,21 @@ extern int syntax_errors;
 extern Node *ast_root;
 
 int main(int argc, char **argv) {
-    if (argc < 2) {
-        fprintf(stderr, "Usage: %s <source.mc> [--ast]\n", argv[0]);
+    int show_ast = 0, show_symtab = 0;
+    const char *path = NULL;
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--ast") == 0) show_ast = 1;
+        else if (strcmp(argv[i], "--symtab") == 0) show_symtab = 1;
+        else path = argv[i];
+    }
+    if (!path) {
+        fprintf(stderr, "Usage: %s <source.mc> [--ast] [--symtab]\n", argv[0]);
         return 2;
     }
-    yyin = fopen(argv[1], "r");
+    yyin = fopen(path, "r");
     if (!yyin) {
-        perror(argv[1]);
+        perror(path);
         return 2;
     }
     yyparse();
@@ -27,9 +38,17 @@ int main(int argc, char **argv) {
                 lexical_errors, syntax_errors);
         return 1;
     }
-    if (argc > 2 && strcmp(argv[2], "--ast") == 0)
-        ast_print(ast_root, 0);
-    /* TODO: semantic analysis (ast_root), then TAC generation. */
-    printf("Parsing successful: no lexical or syntax errors.\n");
+    if (show_ast) ast_print(ast_root, 0);
+
+    int sem_errors = semantic_check(ast_root);
+    if (sem_errors) {
+        fprintf(stderr, "Compilation failed: %d semantic error(s)\n", sem_errors);
+        return 1;
+    }
+    if (show_symtab) st_dump();
+
+    /* Final phase: Three Address Code goes to stdout (redirect with > file.tac) */
+    tac_generate(ast_root, stdout);
+    fprintf(stderr, "Compilation successful: TAC generated.\n");
     return 0;
 }

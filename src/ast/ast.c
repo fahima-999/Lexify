@@ -1,0 +1,72 @@
+/* Lexify AST - construction and printing */
+#include <stdio.h>
+#include <stdlib.h>
+#include "ast/ast.h"
+
+static Node *new_node(NodeKind k, int line) {
+    Node *n = calloc(1, sizeof(Node));
+    if (!n) { fprintf(stderr, "out of memory\n"); exit(2); }
+    n->kind = k; n->line = line; n->type = T_NONE;
+    return n;
+}
+
+Node *mk_program(Node *s)  { Node *n = new_node(N_PROGRAM, 1); n->a = s; return n; }
+Node *mk_block(Node *s, int l) { Node *n = new_node(N_BLOCK, l); n->a = s; return n; }
+Node *mk_decl(Type t, char *name, int l) { Node *n = new_node(N_DECL, l); n->type = t; n->name = name; return n; }
+Node *mk_assign(char *name, Node *e, int l) { Node *n = new_node(N_ASSIGN, l); n->name = name; n->a = e; return n; }
+Node *mk_print(Node *e, int l) { Node *n = new_node(N_PRINT, l); n->a = e; return n; }
+Node *mk_if(Node *c, Node *t, Node *e, int l) { Node *n = new_node(N_IF, l); n->a = c; n->b = t; n->c = e; return n; }
+Node *mk_while(Node *c, Node *b, int l) { Node *n = new_node(N_WHILE, l); n->a = c; n->b = b; return n; }
+Node *mk_binop(const char *op, Node *a, Node *b, int l) { Node *n = new_node(N_BINOP, l); n->op = op; n->a = a; n->b = b; return n; }
+Node *mk_unop(const char *op, Node *e, int l) { Node *n = new_node(N_UNOP, l); n->op = op; n->a = e; return n; }
+Node *mk_id(char *name, int l) { Node *n = new_node(N_ID, l); n->name = name; return n; }
+Node *mk_int(int v, int l) { Node *n = new_node(N_INT, l); n->ival = v; return n; }
+Node *mk_float(double v, int l) { Node *n = new_node(N_FLOAT, l); n->fval = v; return n; }
+Node *mk_bool(int v, int l) { Node *n = new_node(N_BOOL, l); n->ival = v; return n; }
+
+Node *list_append(Node *list, Node *item) {
+    if (!item) return list;
+    if (!list) return item;
+    Node *p = list;
+    while (p->next) p = p->next;
+    p->next = item;
+    return list;
+}
+
+const char *type_name(Type t) {
+    switch (t) { case T_INT: return "int"; case T_FLOAT: return "float"; case T_BOOL: return "bool"; default: return "none"; }
+}
+
+static void indent(int d) { for (int i = 0; i < d; i++) printf("  "); }
+
+static void print_one(const Node *n, int d) {
+    indent(d);
+    switch (n->kind) {
+    case N_PROGRAM: printf("Program\n"); ast_print(n->a, d + 1); break;
+    case N_BLOCK:   printf("Block\n");   ast_print(n->a, d + 1); break;
+    case N_DECL:    printf("Decl %s %s (line %d)\n", type_name(n->type), n->name, n->line); break;
+    case N_ASSIGN:  printf("Assign %s (line %d)\n", n->name, n->line); print_one(n->a, d + 1); break;
+    case N_PRINT:   printf("Print (line %d)\n", n->line); print_one(n->a, d + 1); break;
+    case N_IF:
+        printf("If (line %d)\n", n->line);
+        indent(d + 1); printf("Cond:\n");  print_one(n->a, d + 2);
+        indent(d + 1); printf("Then:\n");  ast_print(n->b, d + 2);
+        if (n->c) { indent(d + 1); printf("Else:\n"); ast_print(n->c, d + 2); }
+        break;
+    case N_WHILE:
+        printf("While (line %d)\n", n->line);
+        indent(d + 1); printf("Cond:\n"); print_one(n->a, d + 2);
+        indent(d + 1); printf("Body:\n"); ast_print(n->b, d + 2);
+        break;
+    case N_BINOP: printf("BinOp '%s'\n", n->op); print_one(n->a, d + 1); print_one(n->b, d + 1); break;
+    case N_UNOP:  printf("UnOp '%s'\n", n->op);  print_one(n->a, d + 1); break;
+    case N_ID:    printf("Id %s\n", n->name); break;
+    case N_INT:   printf("Int %d\n", n->ival); break;
+    case N_FLOAT: printf("Float %g\n", n->fval); break;
+    case N_BOOL:  printf("Bool %s\n", n->ival ? "true" : "false"); break;
+    }
+}
+
+void ast_print(const Node *n, int depth) {
+    for (; n; n = n->next) print_one(n, depth);
+}

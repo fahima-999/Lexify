@@ -14,10 +14,10 @@ Compiles the fixed mini language from Section 5 of the project manual down to Th
 |-------|-------|-------|
 | Lexer (Flex) | `src/lexer/lexer.l` | done |
 | Parser + CFG (Bison) | `src/parser/parser.y` | grammar done, error recovery via `error ';'` |
-| AST | `src/ast/` | TODO |
-| Symbol table (nested scopes) | `src/symbol_table/` | TODO |
-| Semantic analyzer | `src/semantic/` | TODO |
-| TAC generator | `src/` (add `tac/`) | TODO |
+| AST | `src/ast/` | done (`--ast` prints the tree) |
+| Symbol table (nested scopes) | `src/symbol_table/` | done (`--symtab` prints it) |
+| Semantic analyzer | `src/semantic/` | done (6 error types) |
+| TAC generator | `src/tac/` | done (printed to stdout) |
 
 ## Requirements
 Linux, `gcc`, `flex`, `bison`, `make` (`sudo apt install gcc flex bison make`).
@@ -30,20 +30,23 @@ make clean
 
 ## Run
 ```bash
-./lexify examples/sample.mc
+./lexify examples/sample.mc              # prints Three Address Code to stdout
+./lexify examples/sample.mc > out.tac    # save the TAC
+./lexify examples/sample.mc --ast        # also print the AST
+./lexify examples/sample.mc --symtab     # also print the symbol table
 ```
 
 ## Test
 ```bash
-make test     # runs tests/valid, tests/lexical_errors, tests/syntax_errors
+make test     # runs valid (+ TAC comparison), lexical, syntax and semantic tests
 ```
-Semantic-error tests already exist in `tests/semantic_errors/` and are skipped until the semantic phase is written;
-create an empty `tests/.semantic_ready` file to enable them.
+Each `tests/valid/X.mc` has its expected TAC in `tests/valid/X.tac`.
+Semantic-error tests in `tests/semantic_errors/` are enabled by the empty file `tests/.semantic_ready`.
 
 ## Layout
 ```
 docs/        report outline + formal grammar
-src/         lexer/ parser/ ast/ semantic/ symbol_table/ + main.c
+src/         lexer/ parser/ ast/ semantic/ symbol_table/ tac/ + main.c
 tests/       valid, lexical_errors, syntax_errors, semantic_errors
 examples/    sample programs
 prototypes/  earlier hand-written C / C++ / Java experiments (not part of the graded build)

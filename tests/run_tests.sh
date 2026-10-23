@@ -1,6 +1,6 @@
 #!/bin/sh
 # Runs every tests/*/*.mc through ./lexify.
-#  valid/            must exit 0
+#  valid/            must exit 0; if X.tac sits next to X.mc, stdout must match it exactly
 #  lexical_errors/   must exit 1 and print "Lexical error"
 #  syntax_errors/    must exit 1 and print "Syntax error"
 #  semantic_errors/  skipped until the semantic phase exists
@@ -20,7 +20,19 @@ check() {  # dir  expected_exit  expected_text
     done
 }
 
-check valid 0 ""
+# valid programs: exit 0, and TAC (stdout) must equal the expected .tac file
+for f in tests/valid/*.mc; do
+    exp="${f%.mc}.tac"
+    out=$($BIN "$f" 2>/dev/null); code=$?
+    if [ "$code" -ne 0 ]; then
+        echo "FAIL  $f (exit $code)"; $BIN "$f" 2>&1 | sed 's/^/      /'; fail=$((fail+1))
+    elif [ -f "$exp" ] && [ "$out" != "$(cat "$exp")" ]; then
+        echo "FAIL  $f (TAC differs from $exp)"
+        echo "$out" | diff - "$exp" | sed 's/^/      /'; fail=$((fail+1))
+    else
+        echo "PASS  $f"; pass=$((pass+1))
+    fi
+done
 check lexical_errors 1 "Lexical error"
 check syntax_errors 1 "Syntax error"
 for f in tests/semantic_errors/*.mc; do
