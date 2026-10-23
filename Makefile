@@ -6,7 +6,9 @@ TARGET  = lexify
 
 all: $(TARGET)
 
-$(TARGET): $(BUILD)/lex.yy.c $(BUILD)/parser.tab.c src/main.c
+SRCS    = src/main.c src/ast/ast.c
+
+$(TARGET): $(BUILD)/lex.yy.c $(BUILD)/parser.tab.c $(SRCS)
 	$(CC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/parser.tab.c $(BUILD)/parser.tab.h: src/parser/parser.y | $(BUILD)
